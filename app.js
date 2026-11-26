@@ -1,0 +1,1192 @@
+"use strict";
+
+const icons = {
+  sprout: '<path d="M12 22v-9M12 17C6 17 3 14 3 9c5 0 9 2 9 8Zm0-4c0-5 3-8 9-9 0 6-3 9-9 9Z"/>',
+  home: '<path d="m3 10 9-7 9 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M9 21v-7h6v7"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18m-13 5h2m4 0h2"/>',
+  chart: '<path d="M3 3v18h18M8 16v-4m5 4V8m5 8V5"/>',
+  users: '<circle cx="9" cy="8" r="3"/><path d="M2 21v-2c0-3 3-5 7-5s7 2 7 5v2M17 5a3 3 0 0 1 0 6m1 3c3 1 4 3 4 5v2"/>',
+  heart: '<path d="M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6l1.2 1.2L12 21l7.6-7.6 1.2-1.2a5.4 5.4 0 0 0 0-7.6Z"/>',
+  shield: '<path d="M12 22s7-4 7-10V5l-7-3-7 3v7c0 6 7 10 7 10Z"/><path d="m9 12 2 2 4-4"/>',
+  eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  play: '<path d="m8 5 12 7-12 7Z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/>',
+  sparkle: '<path d="M12 2c1 6 4 9 10 10-6 1-9 4-10 10-1-6-4-9-10-10 6-1 9-4 10-10Z"/>',
+  close: '<path d="m6 6 12 12M18 6 6 18"/>',
+  wind: '<path d="M2 8h14a3 3 0 1 0-3-3M2 12h18a2 2 0 1 1-2 2M2 16h10a3 3 0 1 1-3 3"/>',
+  more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+  phone: '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>',
+  bubbles: '<circle cx="8" cy="14" r="5"/><circle cx="17" cy="7" r="4"/><circle cx="18" cy="18" r="2"/>',
+  senses: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4"/>',
+  wave: '<path d="M2 12h4l2-5 4 10 3-12 3 7h4"/>',
+  moon: '<path d="M20 15a8 8 0 0 1-11-11 8.5 8.5 0 1 0 11 11Z"/>',
+  scissors: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="m8 8 13 13M8 16 21 3"/>'
+};
+const icon = name => `<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${icons[name]}</svg>`;
+document.querySelectorAll("[data-icon]").forEach(element => element.innerHTML = icon(element.dataset.icon));
+
+const moods = [
+  {emoji:"☹️", label:"Very low"}, {emoji:"😟", label:"Low"}, {emoji:"😐", label:"Okay"},
+  {emoji:"🙂", label:"Good"}, {emoji:"😄", label:"Great"}
+];
+const games = {
+  focus:{title:"Make Room to Focus",icon:"sparkle",theme:"amber",description:"Tap away three distractions and choose one small next step."},
+  bubbles:{title:"Thought Clearing",icon:"bubbles",theme:"",seconds:90,description:"Pop six thought bubbles. Take a breath between taps."},
+  senses:{title:"Notice Three Things",icon:"senses",theme:"amber",description:"Take a moment to notice one thing you can see, hear and feel."},
+  lanterns:{title:"Lantern Pairs",icon:"moon",theme:"",description:"Flip six lantern tiles and find the three matching pairs. Take your time."},
+  bloom:{title:"Grow a Bloom",icon:"sprout",theme:"pink",description:"Choose a flower colour and water a tiny seed until it blooms."},
+  fog:{title:"Clear the Fog",icon:"wind",theme:"",seconds:90,description:"Breathe in for 4, pause for 2, and breathe out for 6 as the fog clears. Breathe normally whenever you need to."},
+  shred:{title:"Emotional Shredder",icon:"scissors",theme:"pink",description:"Write a thought if you want, drag the note into the shredder, then take a quiet breath."}
+};
+const moodPool = ["focus","bubbles","senses","lanterns","bloom"];
+const breathRounds = 7;
+const thoughtLabels = ["What if?","Homework","Next week","Messages","Too much","One more thing"];
+const bubbleCount = 6;
+const gameDuration = 60;
+const lanternSymbols = {sun:"☀️",leaf:"🍃",flower:"🌸"};
+const bloomColors = {Lavender:"#a583d5",Peach:"#ee957d",Gold:"#e4b65e"};
+const meditationPrompts = [
+  "Let your feet rest on the floor or notice where your body is supported.",
+  "Breathe at your natural pace. Notice one breath coming in and going out.",
+  "If your attention wanders, gently bring it back to a sound or sensation.",
+  "Notice how you feel now. When you’re ready, look around and carry on."
+];
+const sensePrompts = ["Find one thing you can see. Notice its colour or shape.","Tune in to one sound, near or far.","Notice something you can feel, like your feet on the floor."];
+const main = document.querySelector("#main");
+const screen = document.querySelector("#phone-screen");
+const dialog = document.querySelector("#dialog");
+const content = document.querySelector("#dialog-content");
+const key = "mood-campus-gtsu2037-v1";
+const presentation = location.search === "?presentation=1" && window.parent !== window;
+const formatter = new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Hong_Kong",year:"numeric",month:"2-digit",day:"2-digit"});
+let anchor = formatter.format(new Date());
+const day = (offset = 0, from = anchor) => {
+  const date = new Date(from + "T12:00:00Z");
+  date.setUTCDate(date.getUTCDate() + offset);
+  return date.toISOString().slice(0,10);
+};
+const showDate = (value, options = {month:"short", day:"numeric"}) => new Date(value + "T12:00:00Z").toLocaleDateString("en-GB",{timeZone:"UTC",...options});
+const initial = () => ({entries:{},personal:[],imported:[],energy:14,eegDemo:false, privacyNoticeRead:false, case:null, classMove:false, scenario:false});
+let state = initial();
+if (!presentation) {
+  try { state = {...state,...JSON.parse(localStorage.getItem(key) || "{}")}; } catch {}
+}
+function persist() {
+  if (presentation) return;
+  try { localStorage.setItem(key,JSON.stringify(state)); } catch {}
+}
+const onlineCounselling = '<a class="btn quiet" href="https://www.openup.hk/" target="_blank" rel="noopener">Open online counselling</a>';
+const supportDirectory = '<a class="text-link" href="https://www.shallwetalk.hk/en/get-help/online-support/" target="_blank" rel="noopener">Hong Kong online support contacts</a>';
+const lowMood = record => record?.score === 1 || record?.score === 2;
+const staffDataNotice = "Your teacher and school social worker can see new mood check-ins and saved diary notes.";
+let reviewMonth;
+let page;
+let toastTimer;
+let game;
+let clock;
+let hold;
+let expiry;
+let practice;
+let installPrompt;
+let liveHeadset;
+let eegAttempt = 0;
+let eegConnecting = false;
+let traceSamples = [];
+let traceUpdated = 0;
+const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+const btn = (label,action,style="",symbol="") => `<button type="button" class="btn ${style}" data-action="${action}">${symbol ? icon(symbol) : ""}${label}</button>`;
+const link = (label,route,style="quiet") => `<a class="btn ${style}" href="#${route}">${label}</a>`;
+const badge = (name, theme="") => `<span class="icon-badge ${theme}">${icon(name)}</span>`;
+const intro = (tag,title,copy) => `<div class="page-intro"><div class="eyebrow">${tag}</div><h1>${title}</h1><p>${copy}</p></div>`;
+const eventTypes = {exam:"Assessment",work:"Homework",grades:"Grades",event:"School event"};
+const isDeadline = event => event.type === "exam" || event.type === "work";
+function schoolExamples() {
+  return [
+    {id:"math",name:"Maths quiz",type:"exam",date:day(1),source:"School calendar"},
+    {id:"english",name:"English essay",type:"work",date:day(state.classMove ? 3 : 1),source:"School calendar"},
+    {id:"biology",name:"Biology results",type:"grades",date:day(state.scenario ? 0 : 3),source:"School calendar"}
+  ];
+}
+function events() {
+  const examples = schoolExamples().filter(event=>!state.calendarImport?.replacesExamples || (state.scenario && event.id === "biology"));
+  return [...examples,...state.imported,...state.personal].sort((a,b) => a.date.localeCompare(b.date));
+}
+function nextEvents() { return events().filter(event => event.date >= anchor); }
+function gameAction(id, event) {
+  return event ? "game:"+id+":"+encodeURIComponent(event.id) : "game:"+id;
+}
+function eventList(items, editable=false) {
+  if (!items.length) return "<p>No upcoming events.</p>";
+  return `<ul class="event-list">${items.map(event => {
+    const remove = editable && event.source === "Just for you" ? btn("Remove","remove:"+event.id,"link") : "";
+    const reset = event.type === "grades"
+      ? (event.date <= anchor ? btn("Emotional Shredder",gameAction("shred",event),"soft","scissors") : "")
+      : isDeadline(event) ? btn("Clear the Fog",gameAction("fog",event),"soft","wind") : "";
+    return `<li class="event calendar-event"><span class="date-tile">${Number(event.date.slice(8))}<small>${showDate(event.date,{month:"short"})}</small></span><div class="event-body"><b>${escapeHtml(event.name)}</b><small>${event.source}${event.id === "english" && state.classMove ? " · Updated by teacher" : ""}</small></div><span class="event-chip ${event.type}">${eventTypes[event.type]}</span>${reset || remove ? `<div class="event-actions">${reset}${remove}</div>` : ""}</li>`;
+  }).join("")}</ul>`;
+}
+function assignMoodGame(entry) {
+  if (entry.score <= 2 && !moodPool.includes(entry.reset)) {
+    entry.reset = moodPool[Math.floor(Math.random() * moodPool.length)];
+  }
+}
+function recommend(entry) {
+  const low = entry?.score <= 2;
+  if (low) {
+    const randomReset = moodPool.includes(entry.reset) ? entry.reset : moodPool[0];
+    const results = events().filter(event => event.type === "grades" && event.date >= day(-2) && event.date <= anchor).at(-1);
+    if (results) return {id:"shred",event:results,alternative:randomReset};
+    const deadline = nextEvents().find(event => isDeadline(event) && event.date <= day(1));
+    return deadline ? {id:"fog",event:deadline,alternative:randomReset} : {id:randomReset};
+  }
+  const deadline = nextEvents().find(event => isDeadline(event) && event.date <= day(2));
+  if (deadline) return {id:"fog",event:deadline};
+  return {id:"focus"};
+}
+function lowStreak(staffOnly=false) {
+  const offset = state.entries[anchor] ? 0 : 1;
+  let days = 0;
+  while (true) {
+    const entry = state.entries[day(-offset-days)];
+    if (!lowMood(entry) || (staffOnly && !entry.staffVisible)) break;
+    days++;
+  }
+  return {days,start:days ? day(1-offset-days) : null};
+}
+function lowDays() { return lowStreak().days; }
+function staffTrend(end=anchor) {
+  return Array.from({length:14},(_,index) => day(index-13,end))
+    .filter(date => state.entries[date]?.staffVisible)
+    .map(date => ({date,score:state.entries[date].score}));
+}
+function considerReferral() {
+  const {days,start} = lowStreak(true);
+  if (days < 14 || state.case?.threshold?.start === start) return false;
+  const trendEnd = state.entries[anchor]?.staffVisible ? anchor : day(-1);
+  state.case = {
+    date:anchor,
+    reason:"Automatic wellbeing follow-up",
+    days,
+    trend:staffTrend(trendEnd),
+    trendEnd,
+    status:"New",
+    threshold:{date:anchor,days,start},
+    teacherNamed:true
+  };
+  return true;
+}
+function showToast(message) {
+  const toast = document.querySelector("#toast");
+  toast.textContent = message;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.textContent="",3400);
+}
+function gardenArt() {
+  const plants = ["🌿","🌱","🌷","🌼","🌻","🪻","🌸"];
+  return `<div class="garden-art" aria-hidden="true">${plants.slice(0,Math.min(7,3+Math.floor(state.energy/5))).map(plant => `<span>${plant}</span>`).join("")}</div>`;
+}
+function gardenSummary() {
+  const filled = ((state.energy-1)%10)+1;
+  const drops = Array.from({length:10},(_,index)=>`<i class="${index < filled ? "filled" : ""}"></i>`).join("");
+  return `<div class="garden-drops" aria-hidden="true">${drops}</div><small>${state.energy} shared drops</small><meter min="0" max="${(Math.floor(state.energy/20)+1)*20}" value="${state.energy}" aria-label="Class garden growth"></meter>`;
+}
+function careStatus() {
+  const {days} = lowStreak();
+  if (days < 7) return null;
+  const active = lowStreak(true);
+  const referred = active.days >= 14 && state.case?.threshold?.start === active.start;
+  const title = days >= 14 ? "School follow-up" : "A gentle check-in";
+  const copy = referred
+    ? "Your teacher and school social worker received a named follow-up alert in the demo."
+    : days >= 14
+      ? "School follow-up starts automatically after 14 consecutive low-mood check-ins recorded under the current data notice."
+      : "This week looks like it’s been tiring. These options are here if you’d like support.";
+  return {days,title,copy};
+}
+function carePrompt() {
+  const status = careStatus();
+  if (!status) return "";
+  return `<aside class="banner care-banner" aria-labelledby="care-heading"><div class="card-head"><div><div class="eyebrow">${status.days} low-mood days in a row</div><h2 id="care-heading">${status.title}</h2></div>${badge("heart","pink")}</div><p>${status.copy}</p><div class="controls">${btn("Guided meditation","meditation","soft","moon")}${onlineCounselling}${btn("School social worker","contact","quiet")}</div>${supportDirectory}</aside>`;
+}
+function chooseSupport() {
+  const suggestion = recommend(state.entries[anchor]);
+  const item = games[suggestion.id];
+  const status = careStatus();
+  modal("What would help right now?",`<div class="stack support-picker">
+    <p>Your mood is saved. Take a short reset, try guided meditation, or talk to someone.</p>
+    ${status ? `<aside class="banner care-banner"><h3>${status.title} · Day ${status.days}</h3><p>${status.copy}</p><div class="controls">${btn("School social worker","contact","quiet")}</div>${supportDirectory}</aside>` : ""}
+    <button class="support-choice" type="button" data-action="${gameAction(suggestion.id,suggestion.event)}">${badge(item.icon,item.theme)}<span><strong>Micro-mindfulness</strong><small>${item.title} · ${item.seconds || 60} sec${suggestion.event ? ` · ${escapeHtml(suggestion.event.name)}` : ""}</small></span></button>
+    <button class="support-choice" type="button" data-action="meditation">${badge("moon")}<span><strong>Guided meditation</strong><small>Choose a one- or three-minute practice</small></span></button>
+    <a class="support-choice" href="https://www.openup.hk/" target="_blank" rel="noopener">${badge("heart","pink")}<span><strong>Online counselling</strong><small>Open the external web chat</small></span></a>
+    <div class="controls split">${suggestion.alternative ? btn("Try "+games[suggestion.alternative].title,gameAction(suggestion.alternative),"link") : link("Browse other resets","support","link")}${btn("Skip for now","close","quiet")}</div>
+  </div>`);
+}
+function eegPanel() {
+  if (liveHeadset) {
+    traceSamples = [];
+    return '<div class="eeg-preview"><div><b>Live EEG · AF7</b><small id="live-eeg-status">Waiting for a signal</small></div><svg viewBox="0 0 120 32" aria-label="Raw EEG waveform" role="img"><polyline id="live-eeg-trace" points="0,16 120,16"/></svg></div>';
+  }
+  return state.eegDemo ? `<div class="eeg-preview"><div><b>EEG demo signal</b><small>Simulated waveform</small></div><svg viewBox="0 0 120 32" aria-hidden="true"><path d="M0 17h10l5-4 5 8 5-12 5 16 6-9 8 1 5-5 6 10 5-20 7 25 6-11 10 1 5-6 7 13 7-19 7 12h11"/></svg></div>` : "";
+}
+function updateEEGTrace(samples) {
+  const line = document.querySelector("#live-eeg-trace");
+  if (!line) return;
+  traceSamples = [...traceSamples,...samples].slice(-96);
+  const now = Date.now();
+  if (now-traceUpdated < 80 || traceSamples.length < 12) return;
+  traceUpdated = now;
+  const centre = traceSamples.reduce((sum,value)=>sum+value,0)/traceSamples.length;
+  const scale = Math.max(30,...traceSamples.map(value=>Math.abs(value-centre)));
+  line.setAttribute("points",traceSamples.map((value,index)=>`${(120*index/(traceSamples.length-1)).toFixed(1)},${(16-13*(value-centre)/scale).toFixed(1)}`).join(" "));
+  const status = document.querySelector("#live-eeg-status");
+  if (status.textContent !== "Raw signal · shown locally") status.textContent = "Raw signal · shown locally";
+}
+function stopEEG() {
+  eegAttempt++;
+  eegConnecting = false;
+  liveHeadset?.disconnect();
+  liveHeadset = undefined;
+  traceSamples = [];
+}
+function eegSettings(message="") {
+  const canConnect = typeof navigator.bluetooth?.requestDevice === "function";
+  modal("EEG for practice",`<div class="stack"><p>Connect a compatible Muse 2 headset to view a live raw waveform during practice. Use Chrome on Android or a computer with Bluetooth.</p>
+  <p class="integration-note">The waveform stays in this session. It does not score attention or get saved to your diary.</p>
+  ${message ? `<p role="status">${message}</p>` : ""}
+  ${!canConnect ? '<p class="integration-note">Live Bluetooth is unavailable in this browser. You can still use the simulated waveform.</p>' : ""}
+  <div class="controls">${liveHeadset ? btn("Disconnect headset","eeg-mode:off") : canConnect ? btn("Connect Muse 2","eeg-connect") : ""}
+  ${state.eegDemo ? btn("Turn off EEG demo","eeg-mode:off","quiet") : btn("Enable EEG demo","eeg-mode:on","quiet")}
+  ${!liveHeadset && !state.eegDemo ? btn("Continue without EEG","eeg-mode:off","quiet") : btn("Done","close","link")}</div></div>`);
+}
+async function startLiveEEG(button) {
+  if (eegConnecting || liveHeadset) return;
+  eegConnecting = true;
+  const attempt = ++eegAttempt;
+  button.disabled = true;
+  button.textContent = "Connecting…";
+  try {
+    const headset = await connectMuse(updateEEGTrace,() => {
+      if (attempt !== eegAttempt) return;
+      liveHeadset = undefined;
+      traceSamples = [];
+      const status = document.querySelector("#live-eeg-status");
+      if (status) status.textContent = "Headset disconnected";
+      refresh();
+      if (dialog.open && document.querySelector("#modal-title")?.textContent === "EEG for practice") eegSettings("Headset disconnected.");
+      else showToast("Headset disconnected.");
+    });
+    if (attempt !== eegAttempt) {
+      headset.disconnect();
+      return;
+    }
+    liveHeadset = headset;
+    state.eegDemo = false;
+    persist();
+    refresh();
+    if (dialog.open && document.querySelector("#modal-title")?.textContent === "EEG for practice") eegSettings("Headset connected. Open a practice to view your waveform.");
+    else showToast("EEG headset connected.");
+  } catch (error) {
+    if (attempt === eegAttempt) {
+      const message = error?.name === "NotFoundError" ? "No headset selected." : "Couldn’t connect. Check that a compatible headset is on and free to pair.";
+      if (dialog.open && document.querySelector("#modal-title")?.textContent === "EEG for practice") eegSettings(message);
+      else showToast(message);
+    }
+  } finally {
+    if (attempt === eegAttempt) eegConnecting = false;
+  }
+}
+function moodButtons(entry, showSelection=true) {
+  return `<div class="moods" role="group" aria-label="Today’s mood">${moods.map((mood,index) =>
+    `<button type="button" class="mood" data-action="mood:${index+1}"${showSelection ? ` aria-pressed="${entry?.score===index+1}"` : ""}><span class="mood-face" style="--face-position:${index*25}%" aria-hidden="true"></span><span class="mood-label">${mood.label}</span></button>`
+  ).join("")}</div>`;
+}
+function widget() {
+  const entry = state.entries[anchor];
+  return `<div class="home-layout">
+    <time class="home-date" datetime="${anchor}">${showDate(anchor,{weekday:"long",month:"long",day:"numeric"})}</time>
+    <section class="mood-widget" aria-labelledby="widget-heading">
+      <div class="widget-brand"><img src="./icon-192.png" width="24" height="24" alt=""> MediGarden</div>
+      <h1 id="widget-heading">How are you feeling?</h1>
+      <p class="widget-hint">Tap a mood to check in.</p><p class="staff-data-notice">Your teacher and school social worker can see new check-ins.</p>
+      ${moodButtons(entry,false)}
+      <div class="widget-bottom">${entry
+        ? `<span class="widget-saved">✓ Saved today</span>${link("See your reset","today","soft")}`
+        : `<span class="widget-private">${icon("shield")} Mood stays off this screen</span>`}</div>
+    </section>
+    <div class="home-launcher"><a href="#today" aria-label="MediGarden app"><img src="./icon-192.png" width="56" height="56" alt=""><span>MediGarden</span></a></div>
+  </div>`;
+}
+function today() {
+  const entry = state.entries[anchor];
+  const suggestion = recommend(entry);
+  const pastSameDay = [7,14,21,28].filter(offset => state.entries[day(-offset)]?.score <= 2).length;
+  const pattern = entry?.score <= 2 && pastSameDay >= 2 ? `<small>Your check-in was also low on ${pastSameDay} recent ${showDate(anchor,{weekday:"long"})}s.</small>` : "";
+  const exercise = games[suggestion.id];
+  const context = suggestion.event ? `<div class="reset-context">${icon("calendar")} ${escapeHtml(suggestion.event.name)} · ${showDate(suggestion.event.date)}</div>` : "";
+  const alternative = suggestion.alternative ? `<div class="controls">${btn("Try "+games[suggestion.alternative].title,gameAction(suggestion.alternative),"quiet")}</div>` : "";
+  const status = entry ? '<span class="status-text">✓ Mood saved</span>' : btn("Skip","skip","link");
+  return `<section class="hero" aria-labelledby="greeting"><div><div class="eyebrow">${icon("sun")} ${showDate(anchor,{weekday:"short",month:"long",day:"numeric"})}</div><h1 id="greeting">Hi, Alex.</h1><p>Take a minute for yourself.</p></div></section>
+  <div class="dashboard"><div class="stack">
+  <section class="card check-in"><div class="card-head"><div><h2>How are you feeling?</h2><p>Pick a mood to find a reset.</p></div>${status}</div>
+  <p class="staff-data-notice">${staffDataNotice}</p>
+  ${moodButtons(entry)}
+  <div class="check-in-tools"><details class="journal"><summary>${entry?.note ? "Edit diary note" : "Add a diary note"}</summary><form id="note-form"><label class="field">Today’s note<textarea name="note" maxlength="600" placeholder="Anything you’d like to remember?">${escapeHtml(entry?.note)}</textarea></label><p class="staff-data-notice">Your teacher and school social worker can read this note when you save it.</p><div class="controls"><button class="btn" type="submit">Save note</button></div></form></details>${btn("Preview teacher view","preview","link","eye")}</div>
+  </section>
+  ${carePrompt()}
+  <section class="card recommend"><div class="card-head"><div class="reset-title">${badge(exercise.icon,exercise.theme)}<div><div class="eyebrow">${entry ? "Your next reset" : "Today’s reset"}</div><h2>${exercise.title}</h2></div></div><span class="pill">${exercise.seconds || 60} sec</span></div>
+  ${context}<div class="controls reset-controls">${btn("Start reset",gameAction(suggestion.id,suggestion.event),"","play")}${entry ? btn("Support options","care-options","link") : link("All resets","support","link")}</div><p>${exercise.description}</p>${pattern}${alternative}</section>
+  ${lowMood(entry) ? `<section class="card low-support"><h2>Take a moment or talk to someone</h2><div class="controls">${btn("Guided meditation","meditation","soft","moon")}${onlineCounselling}</div></section>` : ""}
+  </div><div class="stack">
+  <section class="card"><div class="card-head"><div><h2>Coming up</h2><p>From school and your own plans.</p></div>${badge("calendar")}</div>${eventList(nextEvents().slice(0,3))}<div class="controls">${btn("Add deadline","add","quiet","plus")}${link("View calendar","calendar","link")}</div></section>
+  <section class="card garden-card"><div class="card-head"><div><h2>Class garden</h2><p>Each completed reset or meditation adds one anonymous energy.</p></div>${badge("sprout","amber")}</div>${gardenArt()}${gardenSummary()}<div class="controls">${link("Visit the garden","garden","link")}</div></section>
+  </div></div>`;
+}
+function calendarPage() {
+  const upcoming = events().filter(event => event.date >= anchor || (event.type === "grades" && event.date >= day(-2)));
+  return `<div class="calendar-intro"><div class="page-intro"><h1>Calendar</h1><p>School events and your private dates.</p></div>${btn("Add deadline","add","","plus")}</div>
+    <div class="grid2">
+    <section class="card"><div class="card-head"><div><h2>eClass &amp; school calendar</h2><p>Use an iCalendar file (.ics), school CSV or a compatible calendar link from your school.</p></div>${badge("calendar","amber")}</div>
+    ${state.calendarImport ? `<p class="integration-note">${escapeHtml(state.calendarImport.label)} · ${state.calendarImport.count} events loaded</p>` : ""}
+    <div class="controls">${btn("Import sample .ics","sample","soft")}${btn("Upload calendar file","upload","quiet")}</div><input id="csv" type="file" accept=".ics,.csv,text/calendar,text/csv" hidden>
+    <details class="journal"><summary>Use an eClass or school calendar link</summary><form id="calendar-feed-form"><label class="field">School calendar feed URL<input name="feed" type="url" placeholder="https://…" required autocomplete="off"><small>Use a browser-accessible iCalendar link. The URL is used once and stays out of browser storage.</small></label><div class="controls"><button class="btn" type="submit">Load calendar feed</button></div><p id="feed-status" class="integration-note" role="status"></p></form></details></section>
+    <section class="card"><div class="card-head"><div><h2>Upcoming events</h2><p>Pick Clear the Fog for any homework or quiz.</p></div>${badge("calendar")}</div>${eventList(upcoming,true)}</section></div>`;
+}
+function chart(items) {
+  return `<div class="chart">${items.map(({label,score}) => `<div class="bar-row"><span>${label}</span><div class="bar" aria-hidden="true"><span style="width:${(score || 0)*20}%"></span></div><b>${score ? score.toFixed(1) : "—"}</b></div>`).join("")}</div>`;
+}
+function monthOptions() {
+  const current = anchor.slice(0,7);
+  return [...new Set([current,day(-1,current+"-01").slice(0,7),...Object.keys(state.entries).map(date=>date.slice(0,7))])].sort().reverse();
+}
+function trendChart(records, first, last, label) {
+  if (!records.length) return "";
+  const dateIndex = date => Math.round((Date.parse(date)-Date.parse(first))/86400000);
+  const period = Math.max(1,dateIndex(last));
+  const knots = records.map(({date,score}) => ({day:dateIndex(date),x:26+dateIndex(date)*261/period,y:110-(score-1)*21}));
+  const lines = knots.slice(1).map((point,index) => {
+    const prev=knots[index];
+    return point.day === prev.day+1 ? `<line x1="${prev.x}" y1="${prev.y}" x2="${point.x}" y2="${point.y}"/>` : "";
+  }).join("");
+  return `<svg class="mood-trend" viewBox="0 0 305 138" role="img" aria-label="${label}">
+    ${[1,2,3,4,5].map(score => `<text x="8" y="${114-(score-1)*21}">${score}</text><path class="gridline" d="M26 ${110-(score-1)*21}H287"/>`).join("")}
+    <g class="trend-segments">${lines}</g>
+    ${knots.map(point=>`<circle cx="${point.x}" cy="${point.y}" r="3"/>`).join("")}
+    <text x="26" y="132">${showDate(first)}</text><text x="287" y="132" text-anchor="end">${showDate(last)}</text>
+  </svg>`;
+}
+function review() {
+  const available = monthOptions();
+  const month = available.includes(reviewMonth) ? reviewMonth : available[0];
+  const first=month+"-01";
+  const current=month===anchor.slice(0,7);
+  const nextMonth = new Date(first+"T12:00:00Z");
+  nextMonth.setUTCMonth(nextMonth.getUTCMonth()+1);
+  const last = current ? anchor : day(-1,nextMonth.toISOString().slice(0,10));
+  const entries = Object.entries(state.entries).filter(([date]) => date.startsWith(month)).sort(([a],[b]) => a.localeCompare(b));
+  const average = entries.length ? (entries.reduce((sum,[,record]) => sum+record.score,0)/entries.length).toFixed(1) : "—";
+  const recent = entries.map(([date,{score}])=>({date,score}));
+  return intro("Private to you","My mood review","See how your check-ins change month by month.")+
+    `<div class="stack"><label class="field">Month<select id="review-month">${available.map(item=>`<option value="${item}" ${item===month?"selected":""}>${showDate(item+"-01",{month:"long",year:"numeric"})}</option>`).join("")}</select></label>
+    <div class="grid2"><section class="card"><div class="card-head"><h2>Monthly average</h2><span class="pill">${current?"In progress":"Month ended"}</span></div><div class="kpi">${average} / 5</div><p>${entries.length} recorded check-in${entries.length===1?"":"s"}</p>${entries.length ? `<h3 class="trend-heading">Daily mood trend</h3>${trendChart(recent,first,last,"Recorded daily emotion scores from 1 to 5. Exact moods are listed in My diary.")}` : "<p>No check-ins for this month.</p>"}</section>
+    <section class="card"><h2>My diary</h2><p>Your teacher and school social worker can see newly recorded check-ins and saved notes.</p><ul class="history-list">${entries.slice().reverse().map(([date,record]) => `<li><b>${moods[record.score-1].emoji} ${moods[record.score-1].label} · ${showDate(date)}</b>${record.note ? `<p>${escapeHtml(record.note)}</p>` : ""}${record.staffVisible || record.noteStaffVisible ? "<small>New data notice applies</small>" : ""}</li>`).join("")}</ul>${entries.length ? "" : link("Go to check-in","today")}</section></div></div>`;
+}
+function garden() {
+  return intro("Class 5B","Class garden","Every completed reset grows a shared space. Drops are added anonymously.")+
+    `<section class="card garden-card">${gardenArt()}<div class="controls split"><h2>Our garden</h2>${link("Find a reset","support","soft")}</div>${gardenSummary()}</section>`;
+}
+function support() {
+  return intro("Student space","Support & resets","Pick a short practice, a game or someone to talk to.")+
+    `<div class="stack"><div class="grid2"><section class="card"><h2>Guided meditation</h2><p>Choose a one- or three-minute guided practice.</p><div class="controls">${btn("Start meditation","meditation","", "moon")}</div><a class="text-link" href="https://www.uclahealth.org/uclamindful/guided-meditations" target="_blank" rel="noopener">Audio in English and Cantonese · UCLA Mindful</a></section>
+    <section class="card"><h2>Talk to someone</h2><div class="controls">${onlineCounselling}${btn("School social worker","contact","quiet")}</div>${supportDirectory}</section></div>
+    <h2>Mini-games</h2><div class="grid3">${Object.entries(games).map(([id,item]) => `<section class="card">${badge(item.icon,item.theme)}<h2>${item.title}</h2><p>${item.description}</p><div class="controls">${btn("Start reset","game:"+id,"","play")}<span class="pill">${item.seconds || 60} sec</span></div></section>`).join("")}</div></div>`;
+}
+function classTrend() {
+  const samples = [[3.6,21],[3.3,23],[3.0,22],[2.7,23],[2.4,24]];
+  return samples.map(([score,count],index) => {
+    const date = day(index-4);
+    const saved = state.entries[date];
+    const entry = saved?.staffVisible || state.consent?.aggregate === true ? saved : null;
+    return {label:showDate(date),score:(score*count+(entry?.score || 0))/(count+(entry ? 1 : 0))};
+  });
+}
+function classTrendCard(trend = classTrend()) {
+  return `<section class="card"><div class="card-head"><div><h2>Class 5B mood trend</h2><p>Sample daily averages out of 5 · minimum 10 check-ins</p></div>${badge("chart")}</div>${chart(trend)}</section>`;
+}
+function teacherBody(preview=false) {
+  const trend = classTrend();
+  const low = trend.slice(-3).every(item => item.score <= 3);
+  const overlaps = nextEvents().filter(event => event.source !== "Just for you" && isDeadline(event) && event.date === day(1));
+  return `<div class="${preview ? "stack" : "grid2"}">${classTrendCard(trend)}
+  <section class="card"><div class="card-head"><div><h2>Workload radar</h2><p>Recent class mood alongside school deadlines.</p></div>${badge("calendar","amber")}</div>
+  ${state.classMove ? `<p><b>English essay moved to ${showDate(day(3))}.</b> The student calendar shows the new date.</p>` : low && overlaps.length > 1 ? `<div class="banner"><b>Three days averaging 3 or below</b><p>${overlaps.map(item=>escapeHtml(item.name)).join(" and ")} fall on the same day.</p></div>${preview || !overlaps.some(event=>event.id==="english") ? "" : `<div class="controls">${btn("Move essay two days","move")}</div>`}` : "<p>No workload signal today.</p>"}</section>${teacherNotice()}${staffRecords("teacher")}</div>`;
+}
+function teacherNotice() {
+  if (!state.case?.threshold && state.case?.reason !== "14 consecutive very-low check-ins") return "";
+  const message = state.case.teacherNamed
+    ? "<b>Alex Lee · Class 5B</b> · Automatic 14-day follow-up alert."
+    : "The social worker has a follow-up for this class. Teachers can review the class trend and coordinate with the wellbeing team.";
+  return `<aside class="banner"><h3>Wellbeing team alert</h3><p>${message}</p></aside>`;
+}
+function staffRecords(role) {
+  const legacyShare = role === "teacher" ? "shareTeacher" : "shareWorker";
+  const visible = Object.entries(state.entries)
+    .filter(([,entry]) => entry.staffVisible || (entry.note && (entry.noteStaffVisible || entry[legacyShare])))
+    .sort(([a],[b])=>b.localeCompare(a));
+  const entries = visible.map(([date,entry]) => {
+    const mood = entry.staffVisible ? moods[entry.score-1]?.label : "";
+    const note = entry.noteStaffVisible || entry[legacyShare] ? entry.note : "";
+    return `<li><b>${showDate(date)}${mood ? " · "+mood : ""}</b>${note ? `<p>${escapeHtml(note)}</p>` : ""}</li>`;
+  }).join("");
+  return `<section class="card"><h3>Student check-ins and diary</h3>${entries
+    ? `<p>Alex Lee · Class 5B</p><ul class="history-list">${entries}</ul>`
+    : "<p>New check-ins and saved diary notes appear here.</p>"}</section>`;
+}
+function workerDetails(preview=false) {
+  const item = state.case;
+  if (!item) return "<p>No referrals yet.</p>";
+  const records = item.trend || [];
+  const trendEnd = item.trendEnd || item.date;
+  const days = item.days ?? (item.reason === "14 consecutive very-low check-ins" ? 14 : null);
+  return `<div class="event"><span class="avatar">AL</span><div class="event-body"><b>Alex Lee · Class 5B</b><small>${item.reason} · ${showDate(item.date)}</small></div><span class="pill">${item.status}</span></div>
+    ${days != null ? `<p><b>${days} consecutive low-mood days</b> when the follow-up was created.</p>` : ""}
+    ${records.length ? `<h3 class="trend-heading">Shared emoji trend</h3>${trendChart(records,day(-13,trendEnd),trendEnd,"The daily emoji scores shared at referral, on a scale of 1 to 5.")}` : ""}
+    ${!preview && item.status === "New" ? `<div class="controls">${btn("Mark reviewed","review-case","quiet")}</div>` : ""}`;
+}
+function worker() {
+  return intro("Staff preview","Social-worker queue","Fictional student requests and automatic follow-ups.")+
+    `<div class="stack"><section class="card"><h2>Student follow-ups</h2>${workerDetails()}</section>${classTrendCard()}${staffRecords("worker")}</div>`;
+}
+function sharingPreview(role="teacher") {
+  const workerView = role === "worker";
+  modal("Preview Teacher View",`<div class="stack">
+    <p>Both roles can see new check-ins and saved notes. The preview below shows each role’s screen.</p>
+    <div class="preview-switch" role="group" aria-label="Preview role">
+      <button class="btn quiet" data-action="preview:teacher" aria-pressed="${!workerView}">Teacher</button>
+      <button class="btn quiet" data-action="preview:worker" aria-pressed="${workerView}">Social worker</button>
+    </div>
+    <div class="preview-personal"><b>Only you can see this:</b> ${lowDays()} consecutive low-mood days.</div>
+    ${workerView ? `<section class="card"><h3>Student follow-ups</h3>${workerDetails(true)}</section>${classTrendCard()}${staffRecords("worker")}` : teacherBody(true)}
+  </div>`);
+  content.querySelector('[aria-pressed="true"]')?.focus();
+}
+const pages = {today,widget,calendar:calendarPage,review,garden,support,teacher:()=>intro("Staff preview","Teacher dashboard","See class-level trends and coordinate workload.")+teacherBody(),worker};
+function render() {
+  const phoneNav = document.querySelector("#phone-nav");
+  const onHomeScreen = page === "widget";
+  screen.setAttribute("data-view",onHomeScreen ? "widget" : "app");
+  phoneNav.hidden = onHomeScreen;
+  phoneNav.innerHTML = [
+    ["today","Today","home"],["calendar","Calendar","calendar"],["garden","Garden","sprout"],["review","Review","chart"]
+  ].map(([id,title,symbol]) => `<a href="#${id}" ${id===page ? 'aria-current="page"' : ""}>${icon(symbol)}<span>${title}</span></a>`).join("") +
+  `<button type="button" data-action="more">${icon("more")}<span>More</span></button>`;
+  main.innerHTML = pages[page]();
+  const eeg = document.querySelector("[data-action='eeg']");
+  if (eeg) {
+    eeg.hidden = page !== "today";
+    const status = liveHeadset ? "EEG connected" : state.eegDemo ? "EEG demo on" : "EEG off";
+    eeg.setAttribute("aria-label",status+". Open EEG settings.");
+    document.querySelector("#eeg-label").textContent = status;
+  }
+}
+function route() {
+  const requested = location.hash.slice(1);
+  const fromWidget = page === "widget" && requested === "today";
+  page = Object.hasOwn(pages,requested) ? requested : "today";
+  if(dialog.open) dialog.close();
+  render();
+  screen.scrollTop = 0;
+  if (fromWidget && lowMood(state.entries[anchor])) chooseSupport();
+}
+function refresh(selector) {
+  render();
+  if (selector) main.querySelector(selector)?.focus({preventScroll:true});
+}
+function modal(title,body) {
+  content.innerHTML = `<div class="modal"><div class="card-head"><h2 id="modal-title" tabindex="-1">${title}</h2><button class="close" type="button" data-action="close" aria-label="Close">${icon("close")}</button></div>${body}</div>`;
+  dialog.setAttribute("aria-labelledby","modal-title");
+  if (!dialog.open) dialog.showModal();
+  content.querySelector("#modal-title")?.focus({preventScroll:true});
+}
+function more() {
+  modal("More",`<div class="more-list">${presentation ? "" : '<a class="btn quiet" href="./flow.html">User flow demonstration</a>'}${link("Home screen widget","widget")}${link("Support and all resets","support")}${btn("Privacy & consent","privacy","quiet","shield")}${btn("Install app","install","quiet","phone")}${btn("Demo controls","demo","quiet","play")}${link("Teacher view","teacher")}${link("Social worker","worker")}</div>`);
+}
+async function installApp() {
+  if (window.matchMedia("(display-mode: standalone)").matches || navigator.standalone) {
+    modal("MediGarden is installed","<p>You’re using the home-screen app.</p>");
+    return;
+  }
+  if (installPrompt) {
+    const prompt = installPrompt;
+    installPrompt = null;
+    await prompt.prompt();
+    return;
+  }
+  modal("Install MediGarden",'<div class="stack"><p><b>iPhone</b> · Open this page in Safari, tap Share, then choose Add to Home Screen.</p><p><b>Android</b> · Open this page in Chrome and choose Install app or Add to Home screen from the browser menu.</p></div>');
+}
+function privacy() {
+  modal("Privacy & consent",`<div class="stack"><p>${staffDataNotice}</p>
+  <p>After 14 consecutive low-mood days, the app alerts your teacher and school social worker with your name. The social worker gets an automatic follow-up in the demo.</p>
+  <p>Earlier private entries keep their original visibility. The class garden shows anonymous totals.</p>
+  <form id="privacy-form"><label class="setting"><input type="checkbox" name="noticeRead" ${state.privacyNoticeRead?"checked":""}><span><b>I’ve read and understand who can see my data.</b><small>The follow-up rule applies automatically.</small></span></label>
+  <div class="controls"><button class="btn" type="submit">Done</button></div></form></div>`);
+}
+function addDeadline() {
+  modal("Add a private deadline",`<form id="deadline-form" class="stack"><p>Every quiz or homework deadline includes Clear the Fog. Results dates can trigger Emotional Shredder after a low check-in.</p>
+  <label class="field">Title<input name="name" required maxlength="85" placeholder="e.g. Chemistry worksheet"></label>
+  <label class="field">Type<select name="type"><option value="work">Homework</option><option value="exam">Quiz or exam</option><option value="grades">Results day</option></select></label>
+  <label class="field">Event date<input name="date" type="date" min="${anchor}" value="${day(1)}" required></label>
+  <div><button class="btn" type="submit">Save deadline</button></div></form>`);
+}
+function demo() {
+  modal("Demo controls",`<div class="stack"><p>Load fictional check-ins to show what happens over time.</p><a href="./mood-campus-figma-flow.svg" download>Download the Figma storyboard (SVG)</a>
+  <div class="controls">${btn("7 low days","seed:7","quiet")}${btn("14 low days","seed:14","quiet")}${btn("Results day","seed:grades","quiet")}</div>
+  <div class="controls">${btn("Reset demo","reset-confirm","link")}</div></div>`);
+}
+function clearTimers() {
+  clearInterval(clock);
+  clearTimeout(hold);
+  clearTimeout(expiry);
+}
+function dealLanterns() {
+  const deck = Object.keys(lanternSymbols).flatMap(symbol => [symbol,symbol]);
+  for (let index=deck.length-1; index>0; index--) {
+    const other = Math.floor(Math.random()*(index+1));
+    [deck[index],deck[other]] = [deck[other],deck[index]];
+  }
+  return deck;
+}
+function lanternBoard() {
+  const cards = game.deck.map((symbol,index) => {
+    const matched = game.matched.includes(index);
+    const visible = matched || game.revealed.includes(index);
+    return `<button type="button" class="lantern-tile" data-action="flip:${index}" aria-label="Lantern ${index+1}${visible?", "+symbol:""}${matched?", matched":""}" data-lit="${visible}" ${matched?"disabled":""}>${visible ? lanternSymbols[symbol] : "✦"}</button>`;
+  });
+  const progress = game.matched.length/2;
+  const waiting = game.revealed.length === 2;
+  return `<p role="status">${waiting ? "Two different symbols. Turn them over and try another pair." : `${progress} of 3 pairs lit`}</p><div class="lantern-board">${cards.join("")}</div>${waiting ? btn("Turn over both","turn","quiet") : ""}`;
+}
+function redrawLanterns(focusAction) {
+  const zone = document.querySelector("#lantern-game");
+  zone.innerHTML = lanternBoard();
+  (zone.querySelector(`[data-action="${focusAction}"]:enabled`) || zone.querySelector("button:enabled"))?.focus();
+}
+function flipLantern(index) {
+  if (!Number.isInteger(index) || index < 0 || index >= game.deck.length ||
+    game.matched.includes(index) || game.revealed.includes(index) || game.revealed.length === 2) return;
+  game.revealed.push(index);
+  if (game.revealed.length === 2 && game.deck[game.revealed[0]] === game.deck[index]) {
+    game.matched.push(...game.revealed);
+    game.revealed = [];
+    if (game.matched.length === game.deck.length) {finishGame(); return;}
+  }
+  redrawLanterns(game.revealed.length === 2 ? "turn" : "flip:"+index);
+}
+function bloomBoard() {
+  const stage = ["Seed","Sprout","Bud","Bloom"][game.moved];
+  const options = Object.entries(bloomColors).map(([name,color]) =>
+    `<button type="button" class="btn quiet bloom-colour" data-action="bloom-colour:${name}" aria-pressed="${game.colour===name}"><span aria-hidden="true" style="--petal:${color}"></span>${name}</button>`).join("");
+  return `<div class="bloom-plot" data-stage="${game.moved}" style="--petal:${bloomColors[game.colour]}" aria-hidden="true"><span class="bloom-plant"></span><span class="bloom-pot"></span></div>
+    <p role="status">${stage} · ${game.moved} of 3 water drops</p>
+    <div class="bloom-colours" role="group" aria-label="Flower colour">${options}</div>
+    ${game.moved===3 ? btn("Add bloom to the garden","plant") : btn("Water the seed","water","","sparkle")}`;
+}
+function redrawBloom(action) {
+  const zone = document.querySelector("#bloom-game");
+  zone.innerHTML = bloomBoard();
+  zone.querySelector(`[data-action="${action}"]`)?.focus();
+}
+function meditation(duration=60) {
+  clearTimers();
+  game = null;
+  practice = {duration,remaining:duration,running:false};
+  const heading = duration === 180 ? "Three-minute guided meditation" : "One-minute guided meditation";
+  modal(heading,`<p>Read each prompt at your own pace. You can pause whenever you need to.</p>
+    <div class="controls meditation-length" role="group" aria-label="Meditation length">
+      <button class="btn quiet" data-action="meditation:60" aria-pressed="${duration===60}">1 minute</button>
+      <button class="btn quiet" data-action="meditation:180" aria-pressed="${duration===180}">3 minutes</button>
+    </div>${eegPanel()}<div class="exercise meditation"><p id="meditation-prompt" aria-live="polite">${meditationPrompts[0]}</p><div class="meditation-orb" aria-hidden="true"></div><progress id="meditation-progress" max="${duration}" value="0" aria-label="Meditation progress"></progress><p id="meditation-time" role="timer">${duration/60}:00</p></div>${btn("Start practice","meditate","")}<br><a class="text-link" href="https://www.uclahealth.org/uclamindful/guided-meditations" target="_blank" rel="noopener">Longer guided audio · UCLA Mindful</a>`);
+}
+function toggleMeditation(button) {
+  if (practice.running) {
+    clearInterval(clock);
+    practice.running = false;
+    button.textContent = "Resume practice";
+    return;
+  }
+  practice.running = true;
+  document.querySelectorAll(".meditation-length button").forEach(option=>option.disabled = true);
+  button.textContent = "Pause";
+  clock = setInterval(() => {
+    const remaining = --practice.remaining;
+    const {duration} = practice;
+    document.querySelector("#meditation-time").textContent = `${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,"0")}`;
+    document.querySelector("#meditation-progress").value = duration-remaining;
+    if (!remaining) {
+      practice = null;
+      finishPractice();
+    } else if (remaining % (duration/4) === 0) {
+      document.querySelector("#meditation-prompt").textContent = meditationPrompts[(duration-remaining)/(duration/4)];
+    }
+  },1000);
+}
+function startGame(id, eventId) {
+  clearTimers();
+  practice = null;
+  const item = games[id];
+  if (!item) return;
+  game = {id, rounds:0, phase:"ready", moved:0, done:false, paced:false};
+  const event = eventId ? events().find(item => item.id === decodeURIComponent(eventId)) : null;
+  const context = event ? `<div class="reset-context">${icon("calendar")} ${escapeHtml(event.name)} · ${showDate(event.date)}</div>` : "";
+  let exercise;
+  if (id === "fog") {
+    exercise = `<div class="exercise fog-game" id="fog-game" style="--mist:.64"><p id="rhythm" aria-live="polite">Press to breathe in, hold for the pause, then release at the cue.</p><button class="breathe" id="breathe" type="button">Press and hold</button><p id="rounds">0 of ${breathRounds} breaths</p></div><div class="controls">${btn("Start hands-free breathing","paced","quiet")}</div>`;
+  } else if (id === "focus") {
+    exercise = `<div class="exercise"><p>Tap each distraction to set it aside.</p><div class="thoughts">${["Messages","Other homework","What ifs"].map(text=>btn(text,"aside","quiet")).join("")}</div></div><form id="focus-form" class="stack"><label class="field">One small next step <small>Choose one you can do now.</small><select name="step" required><option value="">Choose a step</option><option>Open my notes</option><option>Read the first question</option><option>Set a five-minute timer</option></select></label><p class="form-feedback" id="focus-feedback" role="status"></p><div><button class="btn" type="submit">Finish reset</button></div></form>`;
+  } else if (id === "bubbles") {
+    exercise = `<div class="exercise"><p id="game-progress" aria-live="polite">0 of ${bubbleCount} bubbles</p><div class="bubble-stage"><button class="bubble" id="bubble" type="button" data-action="pop" aria-label="Pop thought: ${thoughtLabels[0]}">${thoughtLabels[0]}</button></div></div>`;
+  } else if (id === "lanterns") {
+    Object.assign(game,{deck:dealLanterns(),matched:[],revealed:[]});
+    exercise = `<div class="exercise lantern-game" id="lantern-game">${lanternBoard()}</div>`;
+  } else if (id === "bloom") {
+    game.colour = "Lavender";
+    exercise = `<div class="exercise bloom-game" id="bloom-game">${bloomBoard()}</div>`;
+  } else if (id === "senses") {
+    exercise = `<div class="exercise sense-game"><p id="game-progress" aria-live="polite">${sensePrompts[0]}</p><div class="controls">${btn("I noticed it","notice","","senses")}</div></div>`;
+  } else {
+    exercise = `<form id="shred-form" class="stack"><label class="field">A thought you want to let go<textarea name="thought" maxlength="180" autocomplete="off" placeholder="Write it here if you want…"></textarea><small>The thought stays on this screen and is cleared after shredding.</small></label>
+      <div class="shred-stack" aria-hidden="true"><div id="paper" class="shred-paper">Drag note</div><div class="shred-slot" id="shred-slot">Shredder</div><div class="paper-pieces">${Array.from({length:8},(_,index)=>`<i style="--piece:${index}"></i>`).join("")}</div></div>
+      <div><button class="btn" type="submit">Shred the paper</button></div></form>`;
+  }
+  const duration = item.seconds || gameDuration;
+  const timer = id === "fog" ? "" : `<p class="game-time" id="game-time" role="timer" aria-label="Time remaining">${Math.floor(duration/60)}:${String(duration%60).padStart(2,"0")}</p>`;
+  modal(item.title,`${context}<p>${item.description}</p>${eegPanel()}${timer}${exercise}`);
+  if (timer) {
+    const end = Date.now() + duration * 1000;
+    clock = setInterval(() => {
+      const remaining = Math.max(0,Math.ceil((end-Date.now())/1000));
+      document.querySelector("#game-time").textContent = remaining ? `${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,"0")}` : "Take your time. You can still finish.";
+      if (!remaining) clearInterval(clock);
+    },250);
+  }
+  if (id === "fog") bindFog();
+  if (id === "shred") bindShredder();
+}
+function bindShredder() {
+  const paper = document.querySelector("#paper");
+  const slot = document.querySelector("#shred-slot");
+  let drag;
+  paper.addEventListener("pointerdown",event => {
+    if (!event.isPrimary || event.button !== 0) return;
+    drag = {x:event.clientX,y:event.clientY};
+    paper.setPointerCapture(event.pointerId);
+    paper.classList.add("dragging");
+  });
+  paper.addEventListener("pointermove",event => {
+    if (!drag || !event.isPrimary) return;
+    paper.style.transform = `translate(${event.clientX-drag.x}px,${event.clientY-drag.y}px)`;
+  });
+  function drop(event) {
+    if (!drag || !event.isPrimary) return;
+    drag = null;
+    paper.classList.remove("dragging");
+    paper.style.transform = "";
+    const target = slot.getBoundingClientRect();
+    if (event.type === "pointerup" && event.clientX >= target.left && event.clientX <= target.right &&
+      event.clientY >= target.top && event.clientY <= target.bottom) shredPaper(paper.closest("form"));
+  }
+  paper.addEventListener("pointerup",drop);
+  paper.addEventListener("pointercancel",drop);
+}
+function shredPaper(form) {
+  if (game?.id !== "shred" || game.phase !== "ready") return;
+  game.phase = "shredding";
+  clearTimers();
+  form.querySelector("textarea").value = "";
+  form.querySelector("button").disabled = true;
+  document.querySelector("#paper").classList.add("tear");
+  document.querySelector(".shred-stack").classList.add("shredding");
+  expiry = setTimeout(() => {
+    game.phase = "breath";
+    modal("One breath to close",`<div class="stack"><div class="exercise"><p id="shred-breath" aria-live="polite">Breathe in gently.</p><div class="meditation-orb" aria-hidden="true"></div></div>${btn("Finish reset","finish-shred")}</div>`);
+    hold = setTimeout(() => {
+      document.querySelector("#shred-breath").textContent = "Let the breath out slowly.";
+      expiry = setTimeout(finishGame,8000);
+    },4000);
+  },650);
+}
+function finishGame() {
+  if (!game || game.done) return;
+  game.done = true;
+  finishPractice();
+}
+function finishPractice() {
+  clearTimers();
+  state.energy++;
+  persist();
+  refresh();
+  modal("You contributed +1 energy",`<div class="stack completion"><p>Your anonymous contribution helped the class garden grow.</p>${gardenArt()}${gardenSummary()}<p>Come back tomorrow for another check-in.</p><div class="controls">${link("See class garden","garden","soft")}${link("Back to the widget","widget","quiet")}${btn("Done","close","link")}</div></div>`);
+  content.querySelector(".close")?.focus();
+}
+function inhale(paced=false) {
+  if (!game || game.phase !== "ready") return;
+  game.phase = "in";
+  const control = document.querySelector("#breathe");
+  control.classList.add("holding");
+  document.querySelector("#rhythm").textContent = "Breathe in gently…";
+  hold = setTimeout(() => {
+    game.phase = "hold";
+    document.querySelector("#rhythm").textContent = "Pause gently for two seconds.";
+    hold = setTimeout(() => {
+      if (paced) exhale();
+      else {
+        game.phase = "release";
+        document.querySelector("#rhythm").textContent = "Release and breathe out slowly.";
+      }
+    },2000);
+  },4000);
+}
+function exhale() {
+  if (!game) return;
+  clearTimeout(hold);
+  const control = document.querySelector("#breathe");
+  control.classList.remove("holding");
+  game.phase = "out";
+  document.querySelector("#rhythm").textContent = "Breathe out slowly…";
+  expiry = setTimeout(() => {
+    game.rounds++;
+    document.querySelector("#fog-game").style.setProperty("--mist",String(.64*(1-game.rounds/breathRounds)));
+    document.querySelector("#rounds").textContent = `${game.rounds} of ${breathRounds} breaths`;
+    if (game.rounds === breathRounds) {finishGame(); return;}
+    game.phase = "ready";
+    if (game.paced) inhale(true);
+    else document.querySelector("#rhythm").textContent = "Press and hold when you’re ready for the next breath.";
+  },6000);
+}
+function bindFog() {
+  const control = document.querySelector("#breathe");
+  control.addEventListener("pointerdown",event => {
+    if (!event.isPrimary || event.button !== 0 || game.paced) return;
+    control.setPointerCapture(event.pointerId);
+    inhale();
+  });
+  control.addEventListener("click",event => {if (event.detail===0) startPaced();});
+  function release(event) {
+    if (!event.isPrimary) return;
+    if (game?.phase === "release") {exhale(); return;}
+    if (!["in","hold"].includes(game?.phase) || game.paced) return;
+    clearTimeout(hold);
+    game.phase = "ready";
+    control.classList.remove("holding");
+    document.querySelector("#rhythm").textContent = "Try holding until the release cue, or use paced breathing.";
+  }
+  control.addEventListener("pointerup",release);
+  control.addEventListener("pointercancel",release);
+}
+function startPaced() {
+  if (!game || game.phase !== "ready") return;
+  game.paced = true;
+  document.querySelector('[data-action="paced"]').textContent = "Hands-free breathing";
+  document.querySelector('[data-action="paced"]').disabled = true;
+  inhale(true);
+}
+dialog.addEventListener("close",() => {
+  if (dialog.open) return;
+  clearTimers();
+  game = null;
+  practice = null;
+  content.innerHTML = "";
+  if (page && !document.activeElement.closest("button, a, input, textarea, select")) main.focus({preventScroll:true});
+});
+function loadScenario(value) {
+  updateDate();
+  state.case = null;
+  state.scenario = value === "grades";
+  state.entries = {};
+  if (state.scenario) state.entries[anchor] = {score:1,note:"",staffVisible:true};
+  else for (let index=0;index<Number(value);index++) state.entries[day(-index)] = {score:1,note:"",staffVisible:true};
+  assignMoodGame(state.entries[anchor]);
+  considerReferral();
+}
+function seed(value) {
+  loadScenario(value);
+  persist();
+  dialog.close();
+  if (page === "today") refresh();
+  else {
+    history.replaceState(null,"","#today");
+    route();
+  }
+  chooseSupport();
+}
+function applyCsv(input) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  const normalized = input.replace(/^\uFEFF/,"").replace(/\r\n?/g,"\n");
+  for (let index=0;index<=normalized.length;index++) {
+    const char = normalized[index];
+    if (char === '"') {
+      if (quoted && normalized[index+1] === '"') {field += '"'; index++;}
+      else quoted = !quoted;
+    } else if ((char === "," || char === "\n" || char === undefined) && !quoted) {
+      row.push(field.trim());
+      field = "";
+      if (char !== ",") {
+        if (row.some(Boolean)) rows.push(row);
+        row = [];
+      }
+    } else field += char ?? "";
+  }
+  if (quoted || rows.shift()?.join(",").toLowerCase() !== "date,title,type" || !rows.length || rows.length > 100) return false;
+  const imported = [];
+  for (const item of rows) {
+    const [date,name,type] = item;
+    if (item.length!==3 || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date+"T12:00:00Z")) || day(0,date)!==date || !name || name.length>85 || !Object.hasOwn(eventTypes,type)) return false;
+    const id = "school:"+JSON.stringify(item);
+    if (!imported.some(event => event.id===id)) imported.push({id,date,name,type,source:"School calendar"});
+  }
+  saveSchoolCalendar(imported,"School CSV imported");
+  return true;
+}
+
+function saveSchoolCalendar(imported,label,replacesExamples=true) {
+  state.imported = imported;
+  state.calendarImport = {label,count:imported.length,replacesExamples};
+  if (replacesExamples) state.scenario = false;
+  persist();
+  refresh();
+  showToast(`${imported.length} school events imported.`);
+}
+function importCalendarSample() {
+  const sample = [
+    ["history","History quiz","Assessment",0],
+    ["geography","Geography homework","Homework",1],
+    ["science","Science grade release","Grades",2],
+    ["assembly","House assembly","School event",3]
+  ];
+  const ics = ["BEGIN:VCALENDAR","VERSION:2.0",...sample.flatMap(([id,name,category,offset]) => [
+    "BEGIN:VEVENT","UID:sample-"+id,"DTSTART;VALUE=DATE:"+day(offset).replaceAll("-",""),
+    "SUMMARY:"+name,"CATEGORIES:"+category,"END:VEVENT"
+  ]),"END:VCALENDAR"].join("\r\n");
+  const imported = parseSchoolCalendar(ics,date=>formatter.format(date));
+  saveSchoolCalendar(imported.map(event=>({...event,source:"Sample eClass calendar"})),"Sample eClass .ics imported",false);
+}
+async function loadSchoolFeed(form,rawUrl) {
+  const status = document.querySelector("#feed-status");
+  const submit = form.querySelector("button[type=submit]");
+  submit.disabled = true;
+  status.textContent = "Loading calendar…";
+  try {
+    const url = new URL(rawUrl);
+    if (url.protocol !== "https:" || url.username || url.password) {
+      status.textContent = "Use an HTTPS calendar link supplied by your school.";
+      return;
+    }
+    const response = await fetch(url.href,{credentials:"omit",referrerPolicy:"no-referrer",cache:"no-store",signal:AbortSignal.timeout(10000)});
+    if (!response.ok || Number(response.headers.get("content-length")) > 500000) throw new Error("Calendar unavailable");
+    const imported = parseSchoolCalendar(await response.text(),date=>formatter.format(date));
+    if (!imported) {
+      status.textContent = "This link did not return a readable iCalendar file.";
+      return;
+    }
+    saveSchoolCalendar(imported,"School calendar feed refreshed");
+  } catch {
+    status.textContent = "This feed could not be read by the browser. Download the calendar file and upload it here.";
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+document.addEventListener("click",event => {
+  const button = event.target.closest("[data-action]");
+  if (!button) {
+    const anchorLink = event.target.closest("a[href^='#']");
+    if (anchorLink) {
+      if (dialog.open) dialog.close();
+      if (anchorLink.hash === location.hash) screen.scrollTop = 0;
+    }
+    return;
+  }
+  const [action,value,contextId] = button.dataset.action.split(":");
+  switch (action) {
+    case "more": more(); break;
+    case "install": installApp().catch(() => showToast("Use your browser menu to add MediGarden to your home screen.")); break;
+    case "privacy": privacy(); break;
+    case "care-options": chooseSupport(); break;
+    case "eeg": eegSettings(); break;
+    case "eeg-connect": startLiveEEG(button); break;
+    case "eeg-mode":
+      stopEEG();
+      state.eegDemo = value === "on";
+      persist();
+      dialog.close();
+      refresh();
+      showToast(state.eegDemo ? "EEG demo enabled." : "EEG is off.");
+      break;
+    case "preview": sharingPreview(value); break;
+    case "add": addDeadline(); break;
+    case "demo": demo(); break;
+    case "close": dialog.close(); break;
+    case "skip": showToast("Skipped today. Resets and support are still available."); break;
+    case "mood": {
+      const journal = main.querySelector(".journal[open]");
+      const draft = journal?.querySelector("textarea")?.value;
+      updateDate();
+      state.entries[anchor] = {...state.entries[anchor],score:Number(value),staffVisible:true};
+      assignMoodGame(state.entries[anchor]);
+      considerReferral();
+      persist();
+      refresh(`[data-action="mood:${value}"]`);
+      if (journal) {
+        const updatedJournal = main.querySelector(".journal");
+        updatedJournal.open = true;
+        updatedJournal.querySelector("textarea").value = draft;
+      }
+      if (page !== "widget" && lowMood(state.entries[anchor])) chooseSupport();
+      else showToast(page === "widget" ? "Mood saved for today." : `Mood saved. ${games[recommend(state.entries[anchor]).id].title} is ready.`);
+      break;
+    }
+    case "game": startGame(value, contextId); break;
+    case "meditation": meditation(value==="180" ? 180 : 60); break;
+    case "finish-shred": finishGame(); break;
+    case "meditate": toggleMeditation(button); break;
+    case "flip": flipLantern(Number(value)); break;
+    case "turn": {
+      const first = game.revealed[0];
+      game.revealed = [];
+      redrawLanterns("flip:"+first);
+      break;
+    }
+    case "bloom-colour":
+      game.colour = value;
+      redrawBloom("bloom-colour:"+value);
+      break;
+    case "water":
+      game.moved++;
+      redrawBloom(game.moved === 3 ? "plant" : "water");
+      break;
+    case "plant": finishGame(); break;
+    case "paced": startPaced(); break;
+    case "pop":
+      game.moved++;
+      if (game.moved === bubbleCount) {finishGame(); break;}
+      document.querySelector("#game-progress").textContent = `${game.moved} of ${bubbleCount} bubbles`;
+      button.dataset.position = String(game.moved);
+      button.textContent = thoughtLabels[game.moved];
+      button.setAttribute("aria-label","Pop thought: "+thoughtLabels[game.moved]);
+      break;
+    case "notice":
+      game.moved++;
+      if (game.moved === sensePrompts.length) {finishGame(); break;}
+      document.querySelector("#game-progress").textContent = sensePrompts[game.moved];
+      break;
+    case "aside":
+      button.remove();
+      game.moved++;
+      if (game.moved===3) {
+        document.querySelector(".thoughts").textContent = "A little room to focus.";
+        document.querySelector("#focus-feedback").textContent = "";
+      }
+      (document.querySelector(".thoughts button") || document.querySelector("#focus-form select")).focus();
+      break;
+    case "contact":
+      modal("School social worker",`<div class="stack"><p>For your school’s real contact details, check the school directory or ask a trusted member of staff. You can create a fictional request in this demo.</p>${supportDirectory}<div class="controls">${btn("Send demo request","request")}</div></div>`);
+      break;
+    case "request":
+      if (!state.case) state.case = {date:anchor,reason:"Student requested contact",days:lowStreak(true).days,trend:staffTrend(),status:"New"};
+      persist();
+      dialog.close();
+      refresh();
+      showToast("Demo request saved to the social-worker queue.");
+      break;
+    case "review-case":
+      state.case.status = "Reviewed";
+      persist();
+      refresh();
+      showToast("Follow-up marked reviewed.");
+      break;
+    case "seed": seed(value); break;
+    case "reset-confirm":
+      modal("Reset this demo?",`<p>This clears check-ins, deadlines, privacy acknowledgement and garden contributions in this browser.</p><div class="controls">${btn("Reset demo","reset")}${btn("Cancel","close","quiet")}</div>`);
+      break;
+    case "reset":
+      state=initial();
+      persist();
+      dialog.close();
+      if(page==="today") refresh(); else location.hash="today";
+      showToast("Demo reset.");
+      break;
+    case "remove":
+      state.personal=state.personal.filter(event=>event.id!==value);
+      persist();
+      refresh();
+      showToast("Deadline removed.");
+      break;
+    case "move":
+      state.classMove=true;
+      persist();
+      refresh();
+      showToast("Class calendar updated.");
+      break;
+    case "sample": importCalendarSample(); break;
+    case "upload": document.querySelector("#csv").click(); break;
+  }
+});
+document.addEventListener("change",async event => {
+  if (event.target.id === "review-month") {
+    reviewMonth = event.target.value;
+    refresh("#review-month");
+    return;
+  }
+  if (event.target.matches("#deadline-form select")) {
+    const date = event.target.form.elements.date;
+    date.min = event.target.value === "grades" ? day(-2) : anchor;
+    return;
+  }
+  if (event.target.id !== "csv" || !event.target.files.length) return;
+  const file = event.target.files[0];
+  event.target.value="";
+  try {
+    if (file.size <= 500000) {
+      const contents = await file.text();
+      if (/^\s*BEGIN:VCALENDAR/im.test(contents)) {
+        const imported = parseSchoolCalendar(contents,date=>formatter.format(date));
+        if (imported) {
+          saveSchoolCalendar(imported,"School iCalendar file imported");
+          return;
+        }
+      } else if (file.size <= 100000 && applyCsv(contents)) return;
+    }
+  } catch {}
+  showToast("Upload a readable iCalendar (.ics) or CSV with date, title and type.");
+});
+document.addEventListener("submit",event => {
+  const form = event.target;
+  event.preventDefault();
+  const data = new FormData(form);
+  switch (form.id) {
+    case "calendar-feed-form":
+      loadSchoolFeed(form,String(data.get("feed")).trim());
+      break;
+    case "note-form":
+      if (!state.entries[anchor]) {showToast("Choose an emoji before saving your note."); return;}
+      const entry = state.entries[anchor];
+      entry.note = String(data.get("note")).trim();
+      entry.noteStaffVisible = Boolean(entry.note);
+      persist();
+      showToast("Diary note saved.");
+      break;
+    case "deadline-form": {
+      const name=String(data.get("name")).trim();
+      if (!name) {showToast("Enter a deadline title."); return;}
+      state.personal.push({id:"personal-"+Math.random().toString(36).slice(2),name,type:data.get("type"),date:data.get("date"),source:"Just for you"});
+      persist();
+      dialog.close();
+      refresh();
+      showToast("Calendar event saved.");
+      break;
+    }
+    case "privacy-form":
+      state.privacyNoticeRead = data.has("noticeRead");
+      persist();
+      dialog.close();
+      refresh();
+      showToast(state.privacyNoticeRead ? "Privacy notice marked as read." : "Privacy notice closed.");
+      break;
+    case "focus-form":
+      if (game.moved < 3) {document.querySelector("#focus-feedback").textContent = "Set aside each distraction before finishing."; return;}
+      finishGame();
+      break;
+    case "shred-form":
+      shredPaper(form);
+      break;
+  }
+});
+const demoRoutes = {
+  widget:"widget", today:"today", eeg:"today", checkin:"today", "support-picker":"today", game:"today", garden:"garden", review:"review",
+  lanterns:"support", bloom:"support", meditation:"support", "sharing-preview":"today",
+  calendar:"calendar", fog:"calendar", results:"today", shredder:"today",
+  seven:"today", fourteen:"today", consent:"today", worker:"worker", teacher:"teacher", "updated-calendar":"calendar"
+};
+function showDemoStep(step) {
+  if (step !== "map" && !Object.hasOwn(demoRoutes,step)) return;
+  clearTimers();
+  game = null;
+  if (dialog.open) dialog.close();
+  if (step === "map") return;
+  updateDate();
+  if (step === "results" || step === "shredder") {
+    if (!state.scenario || state.entries[anchor]?.score > 2 || !state.entries[anchor]) loadScenario("grades");
+  } else if (step === "seven") loadScenario(7);
+  else if (step === "fourteen" && lowStreak(true).days < 14) loadScenario(14);
+  else if (step === "checkin" || step === "game") state.scenario = false;
+
+  if (step === "review" && !Object.keys(state.entries).length) {
+    const sample = day(-1,anchor.slice(0,7)+"-01");
+    [4,3,2,3,4].forEach((score,index) => state.entries[day(index-4,sample)] = {score,note:""});
+    reviewMonth = sample.slice(0,7);
+  }
+  if (step === "game") {
+    if (!lowMood(state.entries[anchor])) state.entries[anchor] = {...state.entries[anchor],score:2,staffVisible:true};
+    assignMoodGame(state.entries[anchor]);
+  }
+  history.replaceState(null,"","#"+demoRoutes[step]);
+  route();
+  if (step === "eeg") eegSettings();
+  if (step === "support-picker") {
+    if (!lowMood(state.entries[anchor])) {
+      state.entries[anchor] = {...state.entries[anchor],score:2,staffVisible:true};
+      assignMoodGame(state.entries[anchor]);
+      refresh();
+    }
+    chooseSupport();
+  }
+  if (step === "game") startGame(state.entries[anchor].reset);
+  if (step === "lanterns" || step === "bloom") startGame(step);
+  if (step === "meditation") meditation();
+  if (step === "sharing-preview") sharingPreview();
+  if (step === "fog") startGame("fog","math");
+  if (step === "shredder") startGame("shred","biology");
+  if (step === "consent") privacy();
+  if (step === "seven" || step === "fourteen" || step === "results") chooseSupport();
+}
+
+if (presentation) {
+  window.addEventListener("message",event => {
+    if (event.source !== window.parent || event.origin !== location.origin || event.data?.type !== "mood-campus-preview") return;
+    showDemoStep(event.data.step);
+  });
+}
+
+function updateDate() {
+  const current = formatter.format(new Date());
+  if (anchor === current) return false;
+  anchor = current;
+  return true;
+}
+window.addEventListener("hashchange",() => {updateDate(); route();});
+document.addEventListener("visibilitychange",() => {
+  if (!document.hidden && !dialog.open && updateDate()) {
+    if (considerReferral()) persist();
+    refresh();
+  }
+});
+window.addEventListener("pagehide",stopEEG);
+window.addEventListener("beforeinstallprompt",event => {
+  event.preventDefault();
+  installPrompt = event;
+});
+if (window.matchMedia?.("(display-mode: standalone)").matches || navigator.standalone) {
+  document.body.classList.add("installed-app");
+}
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
+}
+if (state.entries[anchor]?.score <= 2 && !moodPool.includes(state.entries[anchor].reset)) {
+  assignMoodGame(state.entries[anchor]);
+  persist();
+}
+if (considerReferral()) persist();
+route();
